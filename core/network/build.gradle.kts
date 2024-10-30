@@ -33,7 +33,7 @@ android {
 dependencies {
     implementation(libs.kotlin.serialization)
     implementation(libs.retrofit)
-    implementation(libs.retrofit.serialization)
+    implementation("com.alibaba.fastjson2:fastjson2:2.0.53")
     implementation(libs.okhttp)
     implementation(libs.okhttp.logging.interceptor)
     implementation(project(":core:data"))

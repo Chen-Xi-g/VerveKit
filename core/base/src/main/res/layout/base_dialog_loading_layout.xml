@@ -7,7 +7,7 @@
     </data>
 
     <LinearLayout
-        android:background="@drawable/base_bg_dialog"
+        android:background="@drawable/base_bg_loading_dialog"
         android:minWidth="100dp"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -18,16 +18,13 @@
         android:gravity="center"
         android:orientation="vertical">
 
-        <com.airbnb.lottie.LottieAnimationView
-            android:id="@+id/base_loading_animation"
-            android:layout_width="80dp"
-            android:layout_height="80dp"
-            android:scaleType="centerCrop"
-            app:lottie_autoPlay="true"
-            app:lottie_loop="true"
-            app:lottie_rawRes="@raw/base_animation_loading_dialog" />
+        <ProgressBar
+            android:indeterminateDrawable="@drawable/base_loading_progressbar"
+            android:layout_width="@dimen/dp_50"
+            android:layout_height="@dimen/dp_50"/>
 
         <androidx.appcompat.widget.AppCompatTextView
+            android:layout_marginTop="@dimen/dp_10"
             android:id="@+id/base_loading_text"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"

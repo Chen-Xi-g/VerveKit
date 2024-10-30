@@ -2,78 +2,78 @@ package com.griffin.core.rv
 
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.SimpleItemAnimator
-import com.griffin.core.rv.manager.RVFlowLayoutManager
+import com.griffin.core.rv.manager.GridItemSpacingDecoration
 import com.griffin.core.rv.manager.RVGridLayoutManager
 import com.griffin.core.rv.manager.RVLinearLayoutManager
 import com.griffin.core.rv.manager.RVStaggeredGridLayoutManager
 
 /**
- * 获取binding适配器
+ * Retrieves a custom adapter.
  */
 val RecyclerView.reuseAdapter
     get() = adapter as? ReuseAdapter
         ?: throw NullPointerException("RecyclerView has no ReuseAdapter")
 
 /**
- * 获取适配器数据集
+ * Retrieves the dataset of the adapter.
  */
 val RecyclerView.data get() = reuseAdapter.list
 
 /**
- * 添加数据
+ * Adds a collection of data.
  *
  * @receiver RecyclerView
- * @param data List<*> 数据集
- * @param index Int 从指定索引添加
+ * @param data Dataset
+ * @param index Adds data from a specified index
  */
 fun RecyclerView.addData(data: List<*>, index: Int = -1) {
     reuseAdapter.addData(data, index)
 }
 
 /**
- * 添加数据
+ * Adds data.
  *
  * @receiver RecyclerView
- * @param item 数据源
- * @param index Int 从指定索引添加
+ * @param item Data
+ * @param index Adds data from a specified index
  */
 fun RecyclerView.addData(item: Any, index: Int = -1) {
     reuseAdapter.addData(item, index)
 }
 
 /**
- * 删除指定索引数据
+ * Deletes data at the specified index.
  *
  * @receiver RecyclerView
- * @param index Int
+ * @param index Index
  */
 fun RecyclerView.removeAt(index: Int) {
     reuseAdapter.removeAt(index)
 }
 
 /**
- * 设置数据集
+ * Sets the dataset.
  *
  * @receiver RecyclerView
- * @param data List<*> 数据集
+ * @param data Dataset
  */
 fun RecyclerView.setData(data: List<*>) {
     reuseAdapter.setData(data)
 }
 
 /**
- * 设置数据集
+ * Sets the data.
  *
  * @receiver RecyclerView
- * @param position Int 数据集索引
- * @param data List<*> 数据集
+ * @param index Index
+ * @param data Data
  */
-fun RecyclerView.setData(position: Int, data: Any) {
-    reuseAdapter.setData(position, data)
+fun RecyclerView.setData(index: Int, data: Any) {
+    reuseAdapter.setData(index, data)
 }
 
 /**
- * 快速设置Adapter
+ * Quickly sets up the adapter.
  *
  * @receiver RecyclerView
  * @param block [@kotlin.ExtensionFunctionType] Function2<ReuseAdapter, RecyclerView, Unit>
@@ -87,15 +87,14 @@ fun RecyclerView.setup(
     return adapter
 }
 
-/*==============布局管理=================*/
-
 /**
+ * Sets the RecyclerView to use LinearLayoutManager.
  *
  * @receiver RecyclerView
- * @param orientation Int 滑动方向 [RecyclerView.VERTICAL] or [RecyclerView.HORIZONTAL]
- * @param scrollEnabled Boolean 是否允许滚动
- * @param reverseLayout 是否反转列表
- * @param scrollEnabled 是否允许滚动
+ * @param orientation Scroll direction [RecyclerView.VERTICAL] or [RecyclerView.HORIZONTAL]
+ * @param reverseLayout Whether to reverse the list
+ * @param scrollEnabled Whether scrolling is allowed
+ * @param stackFromEnd true to pin the view's content to the bottom edge, false to pin the view's content to the top edge
  */
 fun RecyclerView.linear(
     @RecyclerView.Orientation orientation: Int = RecyclerView.VERTICAL,
@@ -107,7 +106,6 @@ fun RecyclerView.linear(
         setScrollEnabled(scrollEnabled)
         this.stackFromEnd = stackFromEnd
     }
-    // 避免刷新闪烁
     val animator: RecyclerView.ItemAnimator = itemAnimator ?: return this
     if (animator is SimpleItemAnimator) {
         animator.supportsChangeAnimations = false
@@ -116,14 +114,20 @@ fun RecyclerView.linear(
 }
 
 /**
+ * Sets the RecyclerView to use GridLayoutManager.
+ *
  * @receiver RecyclerView
- * @param spanCount 网格跨度数量
- * @param orientation 列表方向
- * @param reverseLayout 是否反转
- * @param scrollEnabled 是否允许滚动
+ * @param spanCount Number of grid spans
+ * @param horizontalSpacing Horizontal spacing
+ * @param verticalSpacing Vertical spacing
+ * @param orientation Scroll direction [RecyclerView.VERTICAL] or [RecyclerView.HORIZONTAL]
+ * @param reverseLayout Whether to reverse the list
+ * @param scrollEnabled Whether scrolling is allowed
  */
 fun RecyclerView.grid(
     spanCount: Int = -1,
+    horizontalSpacing: Int = 0,
+    verticalSpacing: Int = 0,
     @RecyclerView.Orientation orientation: Int = RecyclerView.VERTICAL,
     reverseLayout: Boolean = false,
     scrollEnabled: Boolean = true
@@ -131,7 +135,9 @@ fun RecyclerView.grid(
     layoutManager = RVGridLayoutManager(context, spanCount, orientation, reverseLayout).apply {
         setScrollEnabled(scrollEnabled)
     }
-    // 避免刷新闪烁
+    if (horizontalSpacing > 0 || verticalSpacing > 0) {
+        addItemDecoration(GridItemSpacingDecoration(spanCount, verticalSpacing, horizontalSpacing))
+    }
     val animator: RecyclerView.ItemAnimator = itemAnimator ?: return this
     if (animator is SimpleItemAnimator) {
         animator.supportsChangeAnimations = false
@@ -140,11 +146,13 @@ fun RecyclerView.grid(
 }
 
 /**
+ * Sets the RecyclerView to use StaggeredGridLayoutManager.
+ *
  * @receiver RecyclerView
- * @param spanCount 网格跨度数量
- * @param orientation 列表方向
- * @param reverseLayout 是否反转
- * @param scrollEnabled 是否允许滚动
+ * @param spanCount Number of grid spans
+ * @param orientation Scroll direction [RecyclerView.VERTICAL] or [RecyclerView.HORIZONTAL]
+ * @param reverseLayout Whether to reverse the list
+ * @param scrollEnabled Whether scrolling is allowed
  */
 fun RecyclerView.staggered(
     spanCount: Int,
@@ -156,27 +164,6 @@ fun RecyclerView.staggered(
         setScrollEnabled(scrollEnabled)
         this.reverseLayout = reverseLayout
     }
-    // 避免刷新闪烁
-    val animator: RecyclerView.ItemAnimator = itemAnimator ?: return this
-    if (animator is SimpleItemAnimator) {
-        animator.supportsChangeAnimations = false
-    }
-    return this
-}
-
-/**
- *
- * @receiver RecyclerView
- * @param scrollEnabled Boolean 是否允许滚动
- * @param scrollEnabled 是否允许滚动
- */
-fun RecyclerView.flow(
-    scrollEnabled: Boolean = true,
-): RecyclerView {
-    layoutManager = RVFlowLayoutManager().apply {
-        setScrollEnabled(scrollEnabled)
-    }
-    // 避免刷新闪烁
     val animator: RecyclerView.ItemAnimator = itemAnimator ?: return this
     if (animator is SimpleItemAnimator) {
         animator.supportsChangeAnimations = false

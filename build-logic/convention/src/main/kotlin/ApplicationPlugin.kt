@@ -23,7 +23,6 @@ class ApplicationPlugin : Plugin<Project>{
             with(pluginManager){
                 apply(libs.getPlugin("android-application"))
                 apply(libs.getPlugin("jetbrains-kotlin-android"))
-                apply(libs.getPlugin("jetbrains-kotlin-serialization"))
                 apply(libs.getPlugin("android-kotlin-ksp"))
             }
 

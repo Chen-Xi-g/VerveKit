@@ -12,6 +12,7 @@ import com.griffin.core.network.api.UserApi
 import com.griffin.core.network.constant.NetworkConstant
 import com.griffin.core.network.interceptor.ParameterInterceptor
 import com.griffin.core.network.interceptor.ResponseInterceptor
+import com.griffin.core.network.json.Retrofit2ConverterFactory
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import dagger.Module
 import dagger.Provides
@@ -79,6 +80,7 @@ object NetworkModel {
         .baseUrl(BuildConfig.SERVER_URL + NetworkConstant.BASE_URL)
         .callFactory(callFactory)
         .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
+        .addConverterFactory(Retrofit2ConverterFactory.create())
         .build()
         .create()
 

@@ -4,6 +4,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.griffin.core.base.ViewState
 import com.griffin.core.data.model.Resource
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -14,163 +20,121 @@ import kotlinx.coroutines.launch
  */
 open class BaseViewModel : ViewModel() {
 
-    companion object{
+    companion object {
         /**
-         * 什么都不显示
+         * Displays nothing.
          */
         const val ERROR_NOTING = 0
 
         /**
-         * 显示Toast
+         * Show Toast.
          */
         const val ERROR_TOAST = 1
-
-        /**
-         * 显示Dialog
-         */
-        const val ERROR_DIALOG = 2
-
-        /**
-         * 显示布局
-         */
-        const val ERROR_LAYOUT = 3
     }
 
     /**
-     * UI状态
+     * ViewState
      */
     private val _viewState = MutableSharedFlow<ViewState>()
     val viewState: SharedFlow<ViewState> = _viewState.asSharedFlow()
 
     /**
-     * 显示加载中弹窗
+     * Show loading Dialog.
      *
-     * @param message 加载中弹窗的提示信息
+     * @param message Loading dialog message.
      */
-    protected fun loadingDialog(message: String? = "加载中...") {
+    fun loadingDialog(message: String? = "Loading...") {
         viewModelScope.launch {
-            _viewState.emit(ViewState.LoadingDialog(message))
+            _viewState.emit(ViewState.Loading(message))
         }
     }
 
     /**
-     * 显示加载中布局
+     * Show error info.
      *
-     * @param message 加载中布局的提示信息
+     * @param message Error message.
      */
-    protected fun loadingLayout(message: String? = "加载中...") {
-        viewModelScope.launch {
-            _viewState.emit(ViewState.LoadingLayout(message))
-        }
-    }
-
-    /**
-     * 显示空数据
-     *
-     * @param message 空数据的提示信息
-     */
-    protected fun empty(message: String? = "- 暂无数据 -") {
-        viewModelScope.launch {
-            _viewState.emit(ViewState.Empty(message))
-        }
-    }
-
-    /**
-     * 显示加载失败
-     *
-     * @param message 加载失败的提示信息
-     * @param isToast 是否弹出toast
-     * @param isDialog 是否弹出dialog
-     * @param code 加载失败的错误码
-     */
-    protected fun error(
-        message: String? = "加载失败",
-        isToast: Boolean = false,
-        isDialog: Boolean = false,
-        code: Int = 0
+    fun error(
+        message: String? = "Load failed."
     ) {
         viewModelScope.launch {
-            if (isDialog){
-                _viewState.emit(ViewState.ErrorDialog(message, isToast, code))
-            }else{
-                _viewState.emit(ViewState.ErrorLayout(message, isToast, code))
-            }
+            _viewState.emit(ViewState.Error(message))
         }
     }
 
     /**
-     * 显示加载成功
+     * Show success info.
      *
-     * @param message 加载成功的提示信息
-     * @param isDialog 是否弹出toast
+     * @param message Success message.
      */
-    protected fun success(
-        message: String? = null,
-        isDialog: Boolean = false
+    fun success(
+        message: String? = null
     ) {
         viewModelScope.launch {
-            _viewState.emit(ViewState.Success(isDialog = isDialog, msgInfo = message))
+            _viewState.emit(ViewState.Success(msgInfo = message))
         }
     }
 
-    protected fun emit(block: suspend () -> Unit){
+    protected fun emit(block: suspend () -> Unit) {
         viewModelScope.launch {
             block()
         }
     }
 
     /**
-     * 处理请求
+     * Handle request.
      *
-     * @param block 请求的代码块
-     * @param message 请求中的提示信息
-     * @param isInvokeSuccess 是否调用成功的回调
-     * @param isLoadingDialog 是否显示加载中弹窗（null: 都不显示, true：显示Dialog，false：显示布局）
-     * @param errorType 错误类型（0：什么都不显示，1：显示Toast，2：显示Dialog，3：显示布局）
-     * @param error 请求失败的回调
-     * @param success 请求成功的回调
+     * @param message Loading dialog message.
+     * @param isLoadingDialog true: Show loading dialog, false: Do not show loading dialog.
+     * @param block Request block.
      */
-    protected fun <T> handleRequest(
-        block: suspend () -> Resource<T>,
-        message: String? = "加载中...",
-        isInvokeSuccess: Boolean = true,
-        isLoadingDialog: Boolean? = null,
+    protected fun handleRequest(
+        message: String? = "Loading...",
+        isLoadingDialog: Boolean = false,
         errorType: Int = ERROR_TOAST,
-        error: ((Resource.Error<T>) -> Unit)? = null,
-        success: (Resource.Success<T>) -> Unit
+        errorBlock: (suspend CoroutineScope.() -> Unit)? = null,
+        block: suspend CoroutineScope.() -> Unit
     ) {
-        if (isLoadingDialog == true){
+        if (isLoadingDialog) {
             loadingDialog(message)
-        } else if (isLoadingDialog == false){
-            loadingLayout(message)
         }
         viewModelScope.launch {
-            when (val result = block()) {
-                is Resource.Success -> {
-                    success.invoke(result)
-                    if (isInvokeSuccess){
-                        this@BaseViewModel.success()
-                    }
-                }
-
-                is Resource.Error -> {
-                    error?.invoke(result)
-                    when(errorType){
-                        1 -> {
-                            error(result.message, isToast = true, isDialog = false, code = result.code)
-                        }
-                        2 -> {
-                            error(result.message, isToast = false, isDialog = true, code = result.code)
-                        }
-                        3 -> {
-                            error(result.message, isToast = false, isDialog = false, code = result.code)
-                        }
-                        else -> {
-                            success()
-                        }
-                    }
+            coroutineContext.ensureActive()
+            try {
+                block.invoke(this)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                errorBlock?.invoke(this)
+                if (errorType == ERROR_TOAST) {
+                    error(e.message)
                 }
             }
+            this@BaseViewModel.success()
         }
     }
+
+    protected inline fun <reified T> CoroutineScope.net(
+        errorType: Int = ERROR_TOAST,
+        noinline block: suspend () -> Resource<T>
+    ): Deferred<T?> = NetDeferred(async(Dispatchers.IO + SupervisorJob()) {
+        coroutineContext.ensureActive()
+        when (val result = block.invoke()) {
+            is Resource.Success -> {
+                result.data
+            }
+
+            is Resource.Error -> {
+                when (errorType) {
+                    ERROR_TOAST -> {
+                        throw Exception(result.message)
+                    }
+
+                    else -> {
+                        success()
+                    }
+                }
+                null
+            }
+        }
+    })
 }

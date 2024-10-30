@@ -45,13 +45,13 @@ abstract class HiltBaseActivity<DB : ViewDataBinding>(@LayoutRes val layoutResId
     AbstractActivity() {
 
     /**
-     * 根布局
+     * Root DataBinding
      */
     private lateinit var _rootBinding: BaseRootLayoutBinding
     val rootBinding get() = _rootBinding
 
     /**
-     * 泛型中的ViewBinding实例
+     * Content DataBinding
      */
     private lateinit var _binding: DB
     val binding get() = _binding
@@ -59,46 +59,32 @@ abstract class HiltBaseActivity<DB : ViewDataBinding>(@LayoutRes val layoutResId
     abstract val viewModel: BaseViewModel
 
     /**
-     * 加载中弹窗
+     * Loading Dialog
      */
     val loadingDialog by lazy {
         LoadingDialog(this)
     }
 
-    /**
-     * 错误弹窗
-     */
-    val errorDialog by lazy {
-        ErrorDialog(this)
-    }
-
-    /**
-     * 成功弹窗
-     */
-    val successDialog by lazy {
-        SuccessDialog(this)
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        WindowCompat.setDecorFitsSystemWindows(window, false)
-        statusIconDark(!isDarkTheme())
-        navigationIconDark(!isDarkTheme())
-        TheRouter.inject(this)
-        lockOrientation(true)
-        // 设置默认布局
+//        statusIconDark(!isDarkTheme())
+//        navigationIconDark(!isDarkTheme())
+        lockOrientation(isPortrait())
         _rootBinding = DataBindingUtil.setContentView(this, R.layout.base_root_layout)
         _rootBinding.lifecycleOwner = this
         initContent()
         initClick()
-        _rootBinding.baseLoadingLayout.root.showAnim()
         initView(savedInstanceState)
-        paddingWindow()
-        obtainData()
         registerObserver()
+        obtainData()
     }
 
     private fun initContent() {
+        if (showTitleBar()) {
+            _rootBinding.baseTitleLayout.root.visibility = View.VISIBLE
+        } else {
+            _rootBinding.baseTitleLayout.root.visibility = View.GONE
+        }
         _rootBinding.baseContentLayout.removeAllViews()
         _binding = DataBindingUtil.inflate(
             layoutInflater,
@@ -110,84 +96,36 @@ abstract class HiltBaseActivity<DB : ViewDataBinding>(@LayoutRes val layoutResId
     }
 
     private fun initClick() {
-        _rootBinding.baseErrorLayout.root.setOnClickListener {
-            if (_rootBinding.baseErrorLayout.root.isVisible()) {
-                onRetry()
-            }
-        }
         _rootBinding.baseTitleLayout.baseBackButton.setOnClickListener {
             finish()
         }
     }
 
-    /**
-     * 注册状态
-     */
     override fun registerObserver() {
         lifecycleScope.launch {
             viewModel.viewState.collectLatest {
-                // 监听UI状态
                 when (it) {
-                    is ViewState.Empty -> showEmpty(it.msg)
-                    is ViewState.ErrorLayout -> {
-                        onError(it.msg, it.isToast, false, it.code)
-                    }
-
-                    is ViewState.ErrorDialog -> {
-                        onError(it.msg, it.isToast, true, it.code)
-                    }
-
-                    is ViewState.LoadingDialog -> showLoadingDialog(it.msg)
-                    is ViewState.LoadingLayout -> showLoading(it.msg)
-                    is ViewState.Success -> {
-                        if (it.isToast) {
-                            successDialog(msg = it.msg)
-                        } else {
-                            showContent()
-                        }
-                    }
+                    is ViewState.Error -> onError(it.msg)
+                    is ViewState.Loading -> showLoadingDialog(it.msg)
+                    is ViewState.Success -> showContent()
                 }
             }
         }
     }
 
     /**
-     * 显示成功内容
+     * Show success content.
      */
     fun showContent() {
-        successDialog.dismiss()
-        errorDialog.dismiss()
         loadingDialog.dismiss()
-        _rootBinding.baseLoadingLayout.root.hide()
-        _rootBinding.baseEmptyLayout.root.hide()
-        _rootBinding.baseErrorLayout.root.hide()
-        _rootBinding.baseContentLayout.showAnim()
     }
 
     /**
-     * 显示加载中布局
-     */
-    fun showLoading(msg: String? = null) {
-        if (!msg.isNullOrEmpty()) {
-            _rootBinding.baseLoadingLayout.baseLoadingText.text = msg
-        }
-        errorDialog.dismiss()
-        successDialog.dismiss()
-        loadingDialog.dismiss()
-        _rootBinding.baseLoadingLayout.root.showAnim()
-        _rootBinding.baseEmptyLayout.root.hide()
-        _rootBinding.baseErrorLayout.root.hide()
-        _rootBinding.baseContentLayout.hide()
-    }
-
-    /**
-     * 显示加载弹窗
+     * Show loading dialog.
      *
-     * @param msg 提示信息
+     * @param msg Loading dialog message.
      */
     fun showLoadingDialog(msg: String? = null) {
-        successDialog.dismiss()
-        errorDialog.dismiss()
         if (!msg.isNullOrEmpty()) {
             loadingDialog.updateText(msg)
         }
@@ -195,160 +133,23 @@ abstract class HiltBaseActivity<DB : ViewDataBinding>(@LayoutRes val layoutResId
     }
 
     /**
-     * 显示空数据布局
-     *
-     * @param msg 提示信息
-     */
-    fun showEmpty(msg: String? = null) {
-        if (!msg.isNullOrEmpty()) {
-            _rootBinding.baseEmptyLayout.baseEmptyText.text = msg
-        }
-        loadingDialog.dismiss()
-        successDialog.dismiss()
-        errorDialog.dismiss()
-        _rootBinding.baseLoadingLayout.root.hide()
-        _rootBinding.baseEmptyLayout.root.showAnim()
-        _rootBinding.baseErrorLayout.root.hide()
-        _rootBinding.baseContentLayout.hide()
-    }
-
-    /**
-     * 显示加载失败布局
-     *
-     * @param msg 错误信息
-     */
-    fun showError(msg: String? = null) {
-        _rootBinding.baseErrorLayout.baseLoadingText.text = msg ?: ""
-        loadingDialog.dismiss()
-        successDialog.dismiss()
-        errorDialog.dismiss()
-        _rootBinding.baseLoadingLayout.root.hide()
-        _rootBinding.baseEmptyLayout.root.hide()
-        _rootBinding.baseErrorLayout.root.showAnim()
-        _rootBinding.baseContentLayout.hide()
-    }
-
-    /**
-     * 显示错误弹窗
-     */
-    fun errorDialog(msg: String? = null) {
-        loadingDialog.dismiss()
-        successDialog.dismiss()
-        if (!msg.isNullOrEmpty()) {
-            errorDialog.updateDesc(msg)
-        }
-        errorDialog.show()
-    }
-
-    /**
-     * 显示成功弹窗
-     */
-    fun successDialog(msg: String? = null) {
-        loadingDialog.dismiss()
-        errorDialog.dismiss()
-        if (!msg.isNullOrEmpty()) {
-            successDialog.updateDesc(msg)
-        }
-        successDialog.show()
-    }
-
-    /**
-     * 设置标题名称
+     * Set title name.
      */
     fun setTitleName(title: String) {
         _rootBinding.baseTitleLayout.baseTitleText.text = title
     }
 
-    /**
-     * 显示View的动画
-     */
-    fun View.showAnim(duration: Long = 400L) {
-        if (visibility == View.VISIBLE) {
-            return
-        }
-        visibility = View.VISIBLE
-        alpha = 0f
-        animate().setDuration(duration)
-            .setListener(null)
-            .alpha(1f).start()
+    override fun onError(message: String?) {
+        showContent()
+        message?.toast()
     }
 
-    /**
-     * 隐藏View的动画
-     */
-    fun View.hideAnim(duration: Long = 400L){
-        if (visibility == View.GONE){
-            return
-        }
-        alpha = 1f
-        animate().setDuration(duration)
-            .alpha(0f)
-            .setListener(object : Animator.AnimatorListener{
-                override fun onAnimationStart(animation: Animator) {
-                }
-
-                override fun onAnimationEnd(animation: Animator) {
-                    visibility = View.GONE
-                }
-
-                override fun onAnimationCancel(animation: Animator) {
-                }
-
-                override fun onAnimationRepeat(animation: Animator) {
-                }
-            })
-            .start()
-    }
+    open fun isPortrait(): Boolean = true
 
     /**
-     * 隐藏View
-     */
-    fun View.hide() {
-        if (visibility != View.VISIBLE) {
-            return
-        }
-        visibility = View.INVISIBLE
-    }
-
-    override fun onError(message: String?, isToast: Boolean, isDialog: Boolean, code: Int?) {
-        if (isDialog) {
-            if (isToast) {
-                showContent()
-                // 弹出toast
-                message?.toast()
-            } else {
-                // 显示错误弹窗
-                errorDialog(message)
-            }
-        } else {
-            if (isToast) {
-                showContent()
-                // 弹出toast
-                message?.toast()
-            } else {
-                // 显示错误布局
-                showError(message)
-            }
-        }
-    }
-
-    /**
-     * 为根布局设置padding
-     */
-    override fun paddingWindow() {
-        ViewCompat.setOnApplyWindowInsetsListener(_rootBinding.root) { v, insets ->
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(systemBars.left, 0, systemBars.right, systemBars.bottom)
-            // 设置标题栏顶部padding
-            _rootBinding.baseTitleLayout.root.setPadding(0, systemBars.top, 0, 0)
-            insets
-        }
-    }
-
-    /**
-     * 锁定屏幕方向
+     * Lock screen orientation.
      *
-     * @param isPortrait 是否锁定竖屏
+     * @param isPortrait true: Portrait, false: Landscape
      */
     fun lockOrientation(isPortrait: Boolean) {
         requestedOrientation = if (isPortrait) {
@@ -359,30 +160,14 @@ abstract class HiltBaseActivity<DB : ViewDataBinding>(@LayoutRes val layoutResId
     }
 
     /**
-     * 资源适配
-     */
-    override fun getResources(): Resources {
-        runMain {
-            AutoSizeCompat.autoConvertDensityOfGlobal(super.getResources());//如果没有自定义需求用这个方法
-            AutoSizeCompat.autoConvertDensity(super.getResources(), 375f, true);//如果有自定义需求就用这个方法
-        }
-        return super.getResources()
-    }
-
-    /**
-     * 点击空白处隐藏软键盘
+     * Hide input method when touch outside EditText.
      */
     override fun dispatchTouchEvent(ev: MotionEvent?): Boolean {
-        if (ev?.action == MotionEvent.ACTION_DOWN) ev.let {
-            if (isShouldHideInput(currentFocus, it)) {
-                val im =
-                    getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
-                im.hideSoftInputFromWindow(
-                    currentFocus?.windowToken,
-                    InputMethodManager.HIDE_NOT_ALWAYS
-                )
-            }
-        }
+        /*        if (ev?.action == MotionEvent.ACTION_DOWN) ev.let {
+                    if (isShouldHideInput(currentFocus, it)) {
+                        hideKeyboard()
+                    }
+                }*/
         return super.dispatchTouchEvent(ev)
     }
 
@@ -401,40 +186,55 @@ abstract class HiltBaseActivity<DB : ViewDataBinding>(@LayoutRes val layoutResId
         return false
     }
 
+    fun showKeyboard(editText: EditText) {
+        editText.requestFocus()
+        val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+        imm.showSoftInput(editText, InputMethodManager.SHOW_IMPLICIT)
+    }
+
+    fun hideKeyboard() {
+        val im =
+            getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+        im.hideSoftInputFromWindow(
+            currentFocus?.windowToken,
+            InputMethodManager.HIDE_NOT_ALWAYS
+        )
+    }
+
     /**
-     * 设置状态栏颜色
+     * Set status bar color.
      */
     fun statusBarColor(@ColorRes color: Int) {
         window.statusBarColor = getColor(color)
     }
 
     /**
-     * 设置状态栏图标颜色
+     * Set status bar icon color.
      *
-     * @param isDark true：图标为黑色，false：图标为白色
+     * @param isDark true: Black icon, false: White icon
      */
-    fun statusIconDark(isDark: Boolean){
+    fun statusIconDark(isDark: Boolean) {
         WindowCompat.getInsetsController(window, window.decorView).apply {
             isAppearanceLightStatusBars = isDark
         }
     }
 
     /**
-     * 设置导航栏图标颜色
-     *
-     * @param isDark true：图标为黑色，false：图标为白色
-     */
-    fun navigationIconDark(isDark: Boolean){
-        WindowCompat.getInsetsController(window, window.decorView).apply {
-            isAppearanceLightNavigationBars = isDark
-        }
-    }
-
-    /**
-     * 设置导航栏颜色
+     * Set navigation bar color.
      */
     fun navigationBarColor(@ColorRes color: Int) {
         window.navigationBarColor = getColor(color)
+    }
+
+    /**
+     * Set navigation bar icon color.
+     *
+     * @param isDark true: Black icon, false: White icon
+     */
+    fun navigationIconDark(isDark: Boolean) {
+        WindowCompat.getInsetsController(window, window.decorView).apply {
+            isAppearanceLightNavigationBars = isDark
+        }
     }
 
 }

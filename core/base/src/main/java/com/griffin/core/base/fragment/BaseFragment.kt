@@ -15,14 +15,15 @@ abstract class BaseFragment<VM : BaseViewModel, DB : ViewDataBinding>(layoutResI
     }
 
     @Suppress("UNCHECKED_CAST")
-    private fun <VM> getVmClazz(obj: Any): VM {
-        return (obj.javaClass.genericSuperclass as ParameterizedType).actualTypeArguments[0] as VM
+    private fun <VM> getVmClazz(obj: Any): Class<VM> {
+        return (obj.javaClass.genericSuperclass as ParameterizedType).actualTypeArguments[0] as Class<VM>
     }
 
     /**
-     * 创建viewModel
+     * Create ViewModel
      */
     private fun createViewModel(): VM {
         return ViewModelProvider(this)[getVmClazz(this)]
     }
+
 }

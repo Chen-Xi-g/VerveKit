@@ -2,9 +2,7 @@ package com.griffin.core.data.model
 
 import com.griffin.core.data.dto.UserAccountDto
 import com.griffin.core.data.dto.UserPayTypeDto
-import com.griffin.core.rv.model.ICheckedEntity
 import com.griffin.core.rv.model.ItemExpand
-import com.griffin.core.rv.model.ItemStableId
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 

@@ -5,41 +5,33 @@ import android.view.View
 import androidx.fragment.app.Fragment
 import com.griffin.core.base.R
 
-abstract class AbstractFragment : Fragment(R.layout.base_root_layout){
+abstract class AbstractFragment : Fragment(){
 
     /**
-     * 实现initView来做视图相关的初始化
+     * initialize view-related components.
      */
     abstract fun initView(view: View, savedInstanceState: Bundle?)
 
     /**
-     * 实现obtainData来做数据的初始化
+     * Data initialization.
      */
     abstract fun obtainData()
 
     /**
-     * 注册流对象观察
+     * Register observer for stream objects.
      */
     abstract fun registerObserver()
 
     /**
-     * 重试
-     */
-    open fun onRetry() {}
-
-    /**
-     * 是否显示标题栏，默认不显示
+     * Whether to show the title bar, default is not to show.
      */
     open fun showTitleBar() = false
 
     /**
-     * 错误回调
+     * Error callback.
      *
-     * @param message 错误信息
-     * @param isToast 是否弹出toast
-     * @param isDialog 是否弹出dialog
-     * @param code 错误码
+     * @param message error message
      */
-    open fun onError(message: String?,isToast: Boolean, isDialog: Boolean, code: Int?) {}
+    abstract fun onError(message: String?)
 
 }

@@ -13,7 +13,7 @@ import com.griffin.core.utils.runMain
  */
 class LoadingDialog(
     context: Context,
-    private var title: String = context.getString(R.string.base_loading_text),
+    private var message: String = context.getString(R.string.base_loading_text),
     @StyleRes themeResId: Int = R.style.LoadingDialog
 ) : Dialog(context, themeResId) {
     private var tvLoadingText: AppCompatTextView? = null
@@ -24,7 +24,7 @@ class LoadingDialog(
         setCancelable(false)
         setCanceledOnTouchOutside(false)
         tvLoadingText = findViewById(R.id.base_loading_text)
-        tvLoadingText?.text = title
+        tvLoadingText?.text = message
     }
 
     override fun show() {
@@ -37,6 +37,6 @@ class LoadingDialog(
         runMain {
             tvLoadingText?.text = text
         }
-        title = text
+        message = text
     }
 }

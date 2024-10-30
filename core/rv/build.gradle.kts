@@ -13,4 +13,5 @@ dependencies {
     api(libs.refresh)
     api(libs.refresh.header)
     api(libs.refresh.footer)
+    implementation(project(":core:data"))
 }

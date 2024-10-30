@@ -16,35 +16,11 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content" />
 
-        <include
-            android:id="@+id/base_empty_layout"
-            layout="@layout/base_empty_layout"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_below="@id/base_title_layout"
-            android:visibility="invisible" />
-
-        <include
-            android:id="@+id/base_loading_layout"
-            layout="@layout/base_loading_layout"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_below="@id/base_title_layout"
-            android:visibility="invisible" />
-
-        <include
-            android:id="@+id/base_error_layout"
-            layout="@layout/base_error_layout"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_below="@id/base_title_layout"
-            android:visibility="invisible" />
-
         <FrameLayout
             android:id="@+id/base_content_layout"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_below="@id/base_title_layout"
-            android:visibility="invisible" />
+            android:layout_below="@id/base_title_layout"/>
+
     </RelativeLayout>
 </layout>

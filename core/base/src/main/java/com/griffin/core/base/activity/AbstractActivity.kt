@@ -2,45 +2,36 @@ package com.griffin.core.base.activity
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
-
 /**
- * Activity抽象类
+ * Abstract class for Activity.
  */
 abstract class AbstractActivity : AppCompatActivity(){
 
     /**
-     * 实现initView来做视图相关的初始化
+     * initialize view-related components.
      */
     abstract fun initView(savedInstanceState: Bundle?)
 
     /**
-     * 实现obtainData来做数据的初始化
+     * Data initialization.
      */
     abstract fun obtainData()
 
     /**
-     * 注册流对象观察
+     * Register observer for stream objects.
      */
     abstract fun registerObserver()
 
     /**
-     * 重试
+     * Whether to show the title bar, default is not to show.
      */
-    open fun onRetry() {}
+    open fun showTitleBar() = true
 
     /**
-     * 设置布局内边距+标题栏内边距
-     */
-    open fun paddingWindow() {}
-
-    /**
-     * 错误回调
+     * Error callback.
      *
-     * @param message 错误信息
-     * @param isToast 是否弹出toast
-     * @param isDialog 是否弹出dialog
-     * @param code 错误码
+     * @param message error message
      */
-    open fun onError(message: String?,isToast: Boolean, isDialog: Boolean, code: Int?) {}
+    abstract fun onError(message: String?)
 
 }
